@@ -17,21 +17,25 @@
 
 package org.apache.kafka.clients.admin;
 
-import org.apache.kafka.common.requests.CreateTopicsRequest.TopicDetails;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.kafka.common.requests.CreateTopicsRequest.TopicDetails;
 
 /**
  * A new topic to be created via {@link AdminClient#createTopics(Collection)}.
  */
 public class NewTopic {
     private final String name;
+    // 分区数
     private final int numPartitions;
+    // 副本银子
     private final short replicationFactor;
+    // 指定副本如何分配
     private final Map<Integer, List<Integer>> replicasAssignments;
+    // 其他参数
     private Map<String, String> configs = null;
 
     /**

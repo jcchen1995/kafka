@@ -16,6 +16,15 @@
  */
 package org.apache.kafka.clients.producer.internals;
 
+import static org.apache.kafka.common.record.RecordBatch.NO_TIMESTAMP;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.clients.ApiVersions;
 import org.apache.kafka.clients.ClientRequest;
 import org.apache.kafka.clients.ClientResponse;
@@ -58,18 +67,11 @@ import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.kafka.common.record.RecordBatch.NO_TIMESTAMP;
-
 /**
  * The background thread that handles the sending of produce requests to the Kafka cluster. This thread makes metadata
  * requests to renew its view of the cluster and then sends produce requests to the appropriate nodes.
+ * <p>
+ * sender 类实现了 Runnable，重点代码在 org.apache.kafka.clients.producer.internals.Sender#run()
  */
 public class Sender implements Runnable {
 
@@ -160,6 +162,7 @@ public class Sender implements Runnable {
         // main loop, runs until close is called
         while (running) {
             try {
+                // 重点代码
                 run(time.milliseconds());
             } catch (Exception e) {
                 log.error("Uncaught error in kafka producer I/O thread: ", e);
@@ -234,12 +237,13 @@ public class Sender implements Runnable {
                 transactionManager.authenticationFailed(e);
             }
         }
-
+        // 重点入口
         long pollTimeout = sendProducerData(now);
         client.poll(pollTimeout, now);
     }
 
     private long sendProducerData(long now) {
+        // 集群信息
         Cluster cluster = metadata.fetch();
 
         // get the list of partitions with data ready to send
@@ -270,6 +274,7 @@ public class Sender implements Runnable {
         }
 
         // create produce requests
+        // 创建请求
         Map<Integer, List<ProducerBatch>> batches = this.accumulator.drain(cluster, result.readyNodes,
                 this.maxRequestSize, now);
         if (guaranteeMessageOrder) {
@@ -309,6 +314,7 @@ public class Sender implements Runnable {
             // otherwise the select time will be the time difference between now and the metadata expiry time;
             pollTimeout = 0;
         }
+        // 发送生产者请求
         sendProduceRequests(batches, now);
 
         return pollTimeout;

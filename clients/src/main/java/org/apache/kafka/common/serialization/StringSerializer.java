@@ -16,10 +16,10 @@
  */
 package org.apache.kafka.common.serialization;
 
-import org.apache.kafka.common.errors.SerializationException;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
+
+import org.apache.kafka.common.errors.SerializationException;
 
 /**
  *  String encoding defaults to UTF8 and can be customized by setting the property key.serializer.encoding,
@@ -30,6 +30,7 @@ public class StringSerializer implements Serializer<String> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
+        // 序列化就针对 key 或 value
         String propertyName = isKey ? "key.serializer.encoding" : "value.serializer.encoding";
         Object encodingValue = configs.get(propertyName);
         if (encodingValue == null)

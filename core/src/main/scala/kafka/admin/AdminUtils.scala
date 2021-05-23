@@ -17,20 +17,18 @@
 
 package kafka.admin
 
+import kafka.common.TopicAlreadyMarkedForDeletionException
 import kafka.log.LogConfig
 import kafka.server.{ConfigEntityName, ConfigType, DynamicConfig}
-import kafka.utils._
 import kafka.utils.ZkUtils._
-import java.util.Random
-import java.util.Properties
-
-import kafka.common.TopicAlreadyMarkedForDeletionException
-import org.apache.kafka.common.errors._
-
-import collection.{Map, Set, mutable, _}
-import scala.collection.JavaConverters._
+import kafka.utils._
 import org.I0Itec.zkclient.exception.ZkNodeExistsException
+import org.apache.kafka.common.errors._
 import org.apache.kafka.common.internals.Topic
+
+import java.util.{Properties, Random}
+import scala.collection.JavaConverters._
+import scala.collection.{Map, Set, mutable, _}
 
 @deprecated("This class is deprecated and will be replaced by kafka.zk.AdminZkClient.", "1.1.0")
 trait AdminUtilities {
@@ -148,16 +146,32 @@ object AdminUtils extends Logging with AdminUtilities {
     }
   }
 
+  /**
+   * 未指定机架信息的分配策略
+   *
+   * @param nPartitions
+   * @param replicationFactor
+   * @param brokerList
+   * @param fixedStartIndex
+   * @param startPartitionId
+   * @return
+   */
   private def assignReplicasToBrokersRackUnaware(nPartitions: Int,
                                                  replicationFactor: Int,
                                                  brokerList: Seq[Int],
-                                                 fixedStartIndex: Int,
-                                                 startPartitionId: Int): Map[Int, Seq[Int]] = {
-    val ret = mutable.Map[Int, Seq[Int]]()
+                                                 fixedStartIndex: Int, // 起始索引
+                                                 startPartitionId: Int) // 起始分区编号
+  : Map[Int, Seq[Int]] = {
+    val ret = mutable.Map[Int, Seq[Int]]() // 返回结果
     val brokerArray = brokerList.toArray
+    // 如果没有指定起始索引，则随机生成一个
     val startIndex = if (fixedStartIndex >= 0) fixedStartIndex else rand.nextInt(brokerArray.length)
+    // 起始分区别号，强制不小于 0
     var currentPartitionId = math.max(0, startPartitionId)
     var nextReplicaShift = if (fixedStartIndex >= 0) fixedStartIndex else rand.nextInt(brokerArray.length)
+    // 核心逻辑开始..
+    // 遍历分区数
+    // 然后从 brokerArray （brokerId 的列表）中选取 replicationFactor 个 brokerId 分配给这个 partition
     for (_ <- 0 until nPartitions) {
       if (currentPartitionId > 0 && (currentPartitionId % brokerArray.length == 0))
         nextReplicaShift += 1

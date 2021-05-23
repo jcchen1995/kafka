@@ -45,10 +45,12 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
  * {@link RecordMetadata}
  */
 public class ProducerRecord<K, V> {
-
+    // 主题
     private final String topic;
+    // 分区
     private final Integer partition;
     private final Headers headers;
+    // key 不仅是消息的附加信息，还可以用来计算分区号进而可以让消息发往特定的分区
     private final K key;
     private final V value;
     private final Long timestamp;
@@ -61,6 +63,7 @@ public class ProducerRecord<K, V> {
      * @param timestamp The timestamp of the record, in milliseconds since epoch. If null, the producer will assign
      *                  the timestamp using System.currentTimeMillis().
      * @param key The key that will be included in the record
+     *              // todo jc，哦~，key 是用来被识别的？
      * @param value The record contents
      * @param headers the headers that will be included in the record
      */

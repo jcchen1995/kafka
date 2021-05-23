@@ -17,17 +17,17 @@
 
 package org.apache.kafka.clients.admin;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionReplica;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.annotation.InterfaceStability;
 import org.apache.kafka.common.config.ConfigResource;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The administrative client for Kafka, which supports managing and inspecting topics, brokers, configurations and ACLs.
@@ -44,8 +44,9 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Create a new AdminClient with the given configuration.
+     * 相当于构造函数
      *
-     * @param props The configuration.
+     * @param props The configuration. todo jc 这些配置是什么配置呢？
      * @return The new KafkaAdminClient.
      */
     public static AdminClient create(Properties props) {
@@ -54,8 +55,9 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Create a new AdminClient with the given configuration.
+     * 相当于构造函数
      *
-     * @param conf The configuration.
+     * @param conf The configuration. todo jc 这些配置是什么配置呢？
      * @return The new KafkaAdminClient.
      */
     public static AdminClient create(Map<String, Object> conf) {
@@ -64,7 +66,9 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Close the AdminClient and release all associated resources.
-     *
+     * <p>
+     * 客户端关闭时要释放资源
+     * <p>
      * See {@link AdminClient#close(long, TimeUnit)}
      */
     @Override
@@ -74,27 +78,29 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Close the AdminClient and release all associated resources.
-     *
+     * <p>
+     * 交给子类去重写
+     * <p>
      * The close operation has a grace period during which current operations will be allowed to
      * complete, specified by the given duration and time unit.
      * New operations will not be accepted during the grace period.  Once the grace period is over,
      * all operations that have not yet been completed will be aborted with a TimeoutException.
      *
-     * @param duration  The duration to use for the wait time.
-     * @param unit      The time unit to use for the wait time.
+     * @param duration The duration to use for the wait time.
+     * @param unit The time unit to use for the wait time.
      */
     public abstract void close(long duration, TimeUnit unit);
 
     /**
      * Create a batch of new topics with the default options.
-     *
+     * 批量创建主题
      * This is a convenience method for #{@link #createTopics(Collection, CreateTopicsOptions)} with default options.
      * See the overload for more details.
-     *
+     * <p>
      * This operation is supported by brokers with version 0.10.1.0 or higher.
      *
-     * @param newTopics         The new topics to create.
-     * @return                  The CreateTopicsResult.
+     * @param newTopics The new topics to create.
+     * @return The CreateTopicsResult.
      */
     public CreateTopicsResult createTopics(Collection<NewTopic> newTopics) {
         return createTopics(newTopics, new CreateTopicsOptions());
@@ -102,7 +108,7 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Create a batch of new topics.
-     *
+     * 批量创建主题，这种方法创建主题不是事务的；存在有些主题创建成功，有些会失败
      * This operation is not transactional so it may succeed for some topics while fail for others.
      *
      * It may take several seconds after {@code CreateTopicsResult} returns
@@ -151,9 +157,11 @@ public abstract class AdminClient implements AutoCloseable {
      *
      * @param topics            The topic names to delete.
      * @param options           The options to use when deleting the topics.
-     * @return                  The DeleteTopicsResult.
+     * @return The DeleteTopicsResult.
      */
-    public abstract DeleteTopicsResult deleteTopics(Collection<String> topics, DeleteTopicsOptions options);
+    public abstract DeleteTopicsResult deleteTopics(Collection<String> topics,
+            DeleteTopicsOptions options // 每一种操作都能携带操作选项
+    );
 
     /**
      * List the topics available in the cluster with the default options.
@@ -169,21 +177,24 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * List the topics available in the cluster.
+     * <p>
+     * Kafka 集群有哪些主题
      *
-     * @param options           The options to use when listing the topics.
-     * @return                  The ListTopicsResult.
+     * @param options The options to use when listing the topics.
+     * @return The ListTopicsResult.
      */
     public abstract ListTopicsResult listTopics(ListTopicsOptions options);
 
     /**
      * Describe some topics in the cluster, with the default options.
-     *
+     * <p>
+     * 主题的描述
+     * <p>
      * This is a convenience method for #{@link AdminClient#describeTopics(Collection, DescribeTopicsOptions)} with
      * default options. See the overload for more details.
      *
-     * @param topicNames        The names of the topics to describe.
-     *
-     * @return                  The DescribeTopicsResult.
+     * @param topicNames The names of the topics to describe.
+     * @return The DescribeTopicsResult.
      */
     public DescribeTopicsResult describeTopics(Collection<String> topicNames) {
         return describeTopics(topicNames, new DescribeTopicsOptions());
@@ -202,11 +213,14 @@ public abstract class AdminClient implements AutoCloseable {
 
     /**
      * Get information about the nodes in the cluster, using the default options.
-     *
-     * This is a convenience method for #{@link AdminClient#describeCluster(DescribeClusterOptions)} with default options.
+     * <p>
+     * 集群的描述
+     * <p>
+     * This is a convenience method for #{@link AdminClient#describeCluster(DescribeClusterOptions)} with default
+     * options.
      * See the overload for more details.
      *
-     * @return                  The DescribeClusterResult.
+     * @return The DescribeClusterResult.
      */
     public DescribeClusterResult describeCluster() {
         return describeCluster(new DescribeClusterOptions());
@@ -236,6 +250,8 @@ public abstract class AdminClient implements AutoCloseable {
     /**
      * Lists access control lists (ACLs) according to the supplied filter.
      *
+     * todo jc ACLs 是什么
+     *
      * Note: it may take some time for changes made by createAcls or deleteAcls to be reflected
      * in the output of describeAcls.
      *
@@ -243,7 +259,7 @@ public abstract class AdminClient implements AutoCloseable {
      *
      * @param filter            The filter to use.
      * @param options           The options to use when listing the ACLs.
-     * @return                  The DeleteAclsResult.
+     * @return The DeleteAclsResult.
      */
     public abstract DescribeAclsResult describeAcls(AclBindingFilter filter, DescribeAclsOptions options);
 
