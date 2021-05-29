@@ -17,6 +17,26 @@
 
 package org.apache.kafka.clients.admin;
 
+import static org.apache.kafka.common.utils.Utils.closeQuietly;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
+
 import org.apache.kafka.clients.ApiVersions;
 import org.apache.kafka.clients.ClientRequest;
 import org.apache.kafka.clients.ClientResponse;
@@ -120,31 +140,13 @@ import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.Time;
 import org.slf4j.Logger;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
-
-import static org.apache.kafka.common.utils.Utils.closeQuietly;
-
 /**
  * The default implementation of {@link AdminClient}. An instance of this class is created by invoking one of the
  * {@code create()} methods in {@code AdminClient}. Users should not refer to this class directly.
- *
+ * <p>
  * The API of this class is evolving, see {@link AdminClient} for details.
+ * <p>
+ * Kafka 默认 admin 客户端
  */
 @InterfaceStability.Evolving
 public class KafkaAdminClient extends AdminClient {
@@ -203,6 +205,7 @@ public class KafkaAdminClient extends AdminClient {
 
     /**
      * The runnable used in the service thread for this admin client.
+     * // 执行任务
      */
     private final AdminClientRunnable runnable;
 
@@ -411,8 +414,10 @@ public class KafkaAdminClient extends AdminClient {
         metadataManager.update(Cluster.bootstrap(addresses), time.milliseconds());
         this.metrics = metrics;
         this.client = client;
+        // 构造这个任务，AdminClientRunnable 是子类，可以使用外类属性
         this.runnable = new AdminClientRunnable();
         String threadName = NETWORK_THREAD_PREFIX + " | " + clientId;
+        // 构造线程，该线程执行 AdminClientRunnable（后台运行）
         this.thread = new KafkaThread(threadName, runnable, true);
         this.timeoutProcessorFactory = (timeoutProcessorFactory == null) ?
             new TimeoutProcessorFactory() : timeoutProcessorFactory;
@@ -738,8 +743,9 @@ public class KafkaAdminClient extends AdminClient {
          */
         boolean callHasExpired(Call call) {
             int remainingMs = calcTimeoutMsRemainingAsInt(now, call.deadlineMs);
-            if (remainingMs < 0)
+            if (remainingMs < 0) {
                 return true;
+            }
             nextTimeoutMs = Math.min(nextTimeoutMs, remainingMs);
             return false;
         }
@@ -749,6 +755,7 @@ public class KafkaAdminClient extends AdminClient {
         }
     }
 
+    // AdminClient 类里面有子类 AdminClientRunnable
     private final class AdminClientRunnable implements Runnable {
         /**
          * Calls which have not yet been assigned to a node.
@@ -800,7 +807,7 @@ public class KafkaAdminClient extends AdminClient {
             int numTimedOut = 0;
             for (List<Call> callList : callsToSend.values()) {
                 numTimedOut += processor.handleTimeouts(callList,
-                    "Timed out waiting to send the call.");
+                        "Timed out waiting to send the call.");
             }
             if (numTimedOut > 0)
                 log.debug("Timed out {} call(s) with assigned nodes.", numTimedOut);
@@ -899,7 +906,7 @@ public class KafkaAdminClient extends AdminClient {
                     requestBuilder = call.createRequest(timeoutMs);
                 } catch (Throwable throwable) {
                     call.fail(now, new KafkaException(String.format(
-                        "Internal error sending %s to %s.", call.callName, node)));
+                            "Internal error sending %s to %s.", call.callName, node)));
                     continue;
                 }
                 ClientRequest clientRequest = client.newClientRequest(node.idString(), requestBuilder, now, true);
@@ -963,8 +970,8 @@ public class KafkaAdminClient extends AdminClient {
                     // If the server returns information about a correlation ID we didn't use yet,
                     // an internal server error has occurred. Close the connection and log an error message.
                     log.error("Internal server error on {}: server returned information about unknown " +
-                        "correlation ID {}, requestHeader = {}", response.destination(), correlationId,
-                        response.requestHeader());
+                                    "correlation ID {}, requestHeader = {}", response.destination(), correlationId,
+                            response.requestHeader());
                     client.disconnect(response.destination());
                     continue;
                 }
@@ -974,7 +981,7 @@ public class KafkaAdminClient extends AdminClient {
                 List<Call> calls = callsInFlight.get(response.destination());
                 if ((calls == null) || (!calls.remove(call))) {
                     log.error("Internal server error on {}: ignoring call {} in correlationIdToCall " +
-                        "that did not exist in callsInFlight", response.destination(), call);
+                            "that did not exist in callsInFlight", response.destination(), call);
                     continue;
                 }
 
@@ -988,8 +995,8 @@ public class KafkaAdminClient extends AdminClient {
                         call.fail(now, authException);
                     } else {
                         call.fail(now, new DisconnectException(String.format(
-                            "Cancelled %s request with correlation id %s due to node %s being disconnected",
-                            call.callName, correlationId, response.destination())));
+                                "Cancelled %s request with correlation id %s due to node %s being disconnected",
+                                call.callName, correlationId, response.destination())));
                     }
                 } else {
                     try {
@@ -1065,6 +1072,7 @@ public class KafkaAdminClient extends AdminClient {
             return false;
         }
 
+        // 主方法
         @Override
         public void run() {
             long now = time.milliseconds();
@@ -1108,11 +1116,14 @@ public class KafkaAdminClient extends AdminClient {
                 }
 
                 // Ensure that we use a small poll timeout if there are pending calls which need to be sent
-                if (!pendingCalls.isEmpty())
+                if (!pendingCalls.isEmpty()) {
                     pollTimeout = Math.min(pollTimeout, retryBackoffMs);
+                }
 
                 // Wait for network responses.
                 log.trace("Entering KafkaClient#poll(timeout={})", pollTimeout);
+                // 这个 client 是 NetworkClient；真正执行请求
+                // 返回的是响应列表 List<ClientResponse>
                 List<ClientResponse> responses = client.poll(pollTimeout, now);
                 log.trace("KafkaClient#poll retrieved {} response(s)", responses.size());
 
@@ -1223,9 +1234,10 @@ public class KafkaAdminClient extends AdminClient {
     /**
      * Returns true if a topic name cannot be represented in an RPC.  This function does NOT check
      * whether the name is too long, contains invalid characters, etc.  It is better to enforce
-     * those policies on the server, so that they can be changed in the future if needed.
+     * those policies（单数：policy） on the server, so that they can be changed in the future if needed.
      */
     private static boolean topicNameIsUnrepresentable(String topicName) {
+        //
         return topicName == null || topicName.isEmpty();
     }
 
@@ -1233,28 +1245,34 @@ public class KafkaAdminClient extends AdminClient {
         return groupId == null;
     }
 
+    // 创建主题的核心代码
     @Override
     public CreateTopicsResult createTopics(final Collection<NewTopic> newTopics,
-                                           final CreateTopicsOptions options) {
+            final CreateTopicsOptions options) {
+        // key：主题名；value：future
         final Map<String, KafkaFutureImpl<Void>> topicFutures = new HashMap<>(newTopics.size());
+
         final Map<String, CreateTopicsRequest.TopicDetails> topicsMap = new HashMap<>(newTopics.size());
+
         for (NewTopic newTopic : newTopics) {
-            if (topicNameIsUnrepresentable(newTopic.name())) {
+            if (topicNameIsUnrepresentable(newTopic.name())) { // 检查了 name 是否为 null 或空字符串
                 KafkaFutureImpl<Void> future = new KafkaFutureImpl<>();
+                // get() 的时候会抛异常
                 future.completeExceptionally(new InvalidTopicException("The given topic name '" +
-                    newTopic.name() + "' cannot be represented in a request."));
+                        newTopic.name() + "' cannot be represented in a request."));
                 topicFutures.put(newTopic.name(), future);
-            } else if (!topicFutures.containsKey(newTopic.name())) {
+            } else if (!topicFutures.containsKey(newTopic.name())) { // 防止 newTopics 有重复的主题名称
                 topicFutures.put(newTopic.name(), new KafkaFutureImpl<Void>());
                 topicsMap.put(newTopic.name(), newTopic.convertToTopicDetails());
             }
         }
         final long now = time.milliseconds();
         Call call = new Call("createTopics", calcDeadlineMs(now, options.timeoutMs()),
-            new ControllerNodeProvider()) {
+                new ControllerNodeProvider()) {
 
             @Override
             public AbstractRequest.Builder createRequest(int timeoutMs) {
+                // 创建 createTopic 的请求
                 return new CreateTopicsRequest.Builder(topicsMap, timeoutMs, options.shouldValidateOnly());
             }
 
@@ -1288,7 +1306,7 @@ public class KafkaAdminClient extends AdminClient {
                     KafkaFutureImpl<Void> future = entry.getValue();
                     if (!future.isDone()) {
                         future.completeExceptionally(new ApiException("The server response did not " +
-                            "contain a reference to node " + entry.getKey()));
+                                "contain a reference to node " + entry.getKey()));
                     }
                 }
             }

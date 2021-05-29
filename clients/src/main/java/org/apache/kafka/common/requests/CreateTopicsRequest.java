@@ -16,12 +16,13 @@
  */
 package org.apache.kafka.common.requests;
 
-import org.apache.kafka.common.errors.UnsupportedVersionException;
-import org.apache.kafka.common.protocol.ApiKeys;
-import org.apache.kafka.common.protocol.types.ArrayOf;
-import org.apache.kafka.common.protocol.types.Field;
-import org.apache.kafka.common.protocol.types.Schema;
-import org.apache.kafka.common.protocol.types.Struct;
+import static org.apache.kafka.common.protocol.CommonFields.PARTITION_ID;
+import static org.apache.kafka.common.protocol.CommonFields.TOPIC_NAME;
+import static org.apache.kafka.common.protocol.types.Type.BOOLEAN;
+import static org.apache.kafka.common.protocol.types.Type.INT16;
+import static org.apache.kafka.common.protocol.types.Type.INT32;
+import static org.apache.kafka.common.protocol.types.Type.NULLABLE_STRING;
+import static org.apache.kafka.common.protocol.types.Type.STRING;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,14 +33,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.kafka.common.protocol.CommonFields.PARTITION_ID;
-import static org.apache.kafka.common.protocol.CommonFields.TOPIC_NAME;
-import static org.apache.kafka.common.protocol.types.Type.BOOLEAN;
-import static org.apache.kafka.common.protocol.types.Type.INT16;
-import static org.apache.kafka.common.protocol.types.Type.INT32;
-import static org.apache.kafka.common.protocol.types.Type.NULLABLE_STRING;
-import static org.apache.kafka.common.protocol.types.Type.STRING;
+import org.apache.kafka.common.errors.UnsupportedVersionException;
+import org.apache.kafka.common.protocol.ApiKeys;
+import org.apache.kafka.common.protocol.types.ArrayOf;
+import org.apache.kafka.common.protocol.types.Field;
+import org.apache.kafka.common.protocol.types.Schema;
+import org.apache.kafka.common.protocol.types.Struct;
 
+/**
+ * 创建主题的请求类；
+ */
 public class CreateTopicsRequest extends AbstractRequest {
     private static final String REQUESTS_KEY_NAME = "create_topic_requests";
 
@@ -97,8 +100,8 @@ public class CreateTopicsRequest extends AbstractRequest {
     private static final Schema CREATE_TOPICS_REQUEST_V3 = CREATE_TOPICS_REQUEST_V2;
 
     public static Schema[] schemaVersions() {
-        return new Schema[]{CREATE_TOPICS_REQUEST_V0, CREATE_TOPICS_REQUEST_V1, CREATE_TOPICS_REQUEST_V2,
-            CREATE_TOPICS_REQUEST_V3};
+        return new Schema[] {CREATE_TOPICS_REQUEST_V0, CREATE_TOPICS_REQUEST_V1, CREATE_TOPICS_REQUEST_V2,
+                CREATE_TOPICS_REQUEST_V3};
     }
 
     public static final class TopicDetails {
@@ -108,9 +111,9 @@ public class CreateTopicsRequest extends AbstractRequest {
         public final Map<String, String> configs;
 
         private TopicDetails(int numPartitions,
-                             short replicationFactor,
-                             Map<Integer, List<Integer>> replicasAssignments,
-                             Map<String, String> configs) {
+                short replicationFactor,
+                Map<Integer, List<Integer>> replicasAssignments,
+                Map<String, String> configs) {
             this.numPartitions = numPartitions;
             this.replicationFactor = replicationFactor;
             this.replicasAssignments = replicasAssignments;
@@ -118,18 +121,18 @@ public class CreateTopicsRequest extends AbstractRequest {
         }
 
         public TopicDetails(int partitions,
-                            short replicationFactor,
-                            Map<String, String> configs) {
-            this(partitions, replicationFactor, Collections.<Integer, List<Integer>>emptyMap(), configs);
+                short replicationFactor,
+                Map<String, String> configs) {
+            this(partitions, replicationFactor, Collections.<Integer, List<Integer>> emptyMap(), configs);
         }
 
         public TopicDetails(int partitions,
-                            short replicationFactor) {
-            this(partitions, replicationFactor, Collections.<String, String>emptyMap());
+                short replicationFactor) {
+            this(partitions, replicationFactor, Collections.<String, String> emptyMap());
         }
 
         public TopicDetails(Map<Integer, List<Integer>> replicasAssignments,
-                            Map<String, String> configs) {
+                Map<String, String> configs) {
             this(NO_NUM_PARTITIONS, NO_REPLICATION_FACTOR, replicasAssignments, configs);
         }
 
@@ -177,10 +180,10 @@ public class CreateTopicsRequest extends AbstractRequest {
         public String toString() {
             StringBuilder bld = new StringBuilder();
             bld.append("(type=CreateTopicsRequest").
-                append(", topics=").append(topics).
-                append(", timeout=").append(timeout).
-                append(", validateOnly=").append(validateOnly).
-                append(")");
+                    append(", topics=").append(topics).
+                    append(", timeout=").append(timeout).
+                    append(", validateOnly=").append(validateOnly).
+                    append(")");
             return bld.toString();
         }
     }
@@ -279,8 +282,9 @@ public class CreateTopicsRequest extends AbstractRequest {
             case 3:
                 return new CreateTopicsResponse(throttleTimeMs, topicErrors);
             default:
-                throw new IllegalArgumentException(String.format("Version %d is not valid. Valid versions for %s are 0 to %d",
-                    versionId, this.getClass().getSimpleName(), ApiKeys.CREATE_TOPICS.latestVersion()));
+                throw new IllegalArgumentException(
+                        String.format("Version %d is not valid. Valid versions for %s are 0 to %d",
+                                versionId, this.getClass().getSimpleName(), ApiKeys.CREATE_TOPICS.latestVersion()));
         }
     }
 

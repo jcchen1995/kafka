@@ -31,9 +31,10 @@ public class NewTopic {
     private final String name;
     // 分区数
     private final int numPartitions;
-    // 副本银子
+    // 副本因子
     private final short replicationFactor;
     // 指定副本如何分配
+    // key：分区号；value：broker 实例列表
     private final Map<Integer, List<Integer>> replicasAssignments;
     // 其他参数
     private Map<String, String> configs = null;

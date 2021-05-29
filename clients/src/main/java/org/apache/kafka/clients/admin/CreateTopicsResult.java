@@ -16,11 +16,11 @@
  */
 package org.apache.kafka.clients.admin;
 
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.annotation.InterfaceStability;
-
 import java.util.Collection;
 import java.util.Map;
+
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.annotation.InterfaceStability;
 
 /**
  * The result of {@link AdminClient#createTopics(Collection)}.
@@ -29,6 +29,7 @@ import java.util.Map;
  */
 @InterfaceStability.Evolving
 public class CreateTopicsResult {
+    // 创建 topic 真正的 response 在这里
     private final Map<String, KafkaFuture<Void>> futures;
 
     CreateTopicsResult(Map<String, KafkaFuture<Void>> futures) {
@@ -45,6 +46,7 @@ public class CreateTopicsResult {
 
     /**
      * Return a future which succeeds if all the topic creations succeed.
+     * // todo jc 为什么才返回第一个？
      */
     public KafkaFuture<Void> all() {
         return KafkaFuture.allOf(futures.values().toArray(new KafkaFuture[0]));

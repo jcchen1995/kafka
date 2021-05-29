@@ -17,9 +17,9 @@
 
 package org.apache.kafka.clients.admin;
 
-import org.apache.kafka.common.annotation.InterfaceStability;
-
 import java.util.Collection;
+
+import org.apache.kafka.common.annotation.InterfaceStability;
 
 /**
  * Options for {@link AdminClient#createTopics(Collection)}.
@@ -28,7 +28,7 @@ import java.util.Collection;
  */
 @InterfaceStability.Evolving
 public class CreateTopicsOptions extends AbstractOptions<CreateTopicsOptions> {
-
+    // 这个参数齐了什么作用
     private boolean validateOnly = false;
 
     /**
