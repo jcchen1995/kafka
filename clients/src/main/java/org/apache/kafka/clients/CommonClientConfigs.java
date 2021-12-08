@@ -16,14 +16,14 @@
  */
 package org.apache.kafka.clients;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Some configurations shared by both producer and consumer
@@ -62,8 +62,10 @@ public class CommonClientConfigs {
     public static final String RETRIES_CONFIG = "retries";
     public static final String RETRIES_DOC = "Setting a value greater than zero will cause the client to resend any request that fails with a potentially transient error.";
 
-    public static final String RETRY_BACKOFF_MS_CONFIG = "retry.backoff.ms";
-    public static final String RETRY_BACKOFF_MS_DOC = "The amount of time to wait before attempting to retry a failed request to a given topic partition. This avoids repeatedly sending requests in a tight loop under some failure scenarios.";
+    public static final String RETRY_BACKOFF_MS_CONFIG = "retry.backoff.ms";    // backoff 就是背压的意思？
+    public static final String RETRY_BACKOFF_MS_DOC =
+            "The amount of time to wait before attempting to retry a failed request to a given topic partition. This "
+                    + "avoids repeatedly sending requests in a tight loop under some failure scenarios.";
 
     public static final String METRICS_SAMPLE_WINDOW_MS_CONFIG = "metrics.sample.window.ms";
     public static final String METRICS_SAMPLE_WINDOW_MS_DOC = "The window of time a metrics sample is computed over.";

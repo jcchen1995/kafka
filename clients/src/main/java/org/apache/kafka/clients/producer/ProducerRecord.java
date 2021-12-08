@@ -45,7 +45,7 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
  * {@link RecordMetadata}
  */
 public class ProducerRecord<K, V> {
-
+    // 比较重要的字段是：topic 和 value
     private final String topic;
     private final Integer partition;
     private final Headers headers;
@@ -55,14 +55,14 @@ public class ProducerRecord<K, V> {
 
     /**
      * Creates a record with a specified timestamp to be sent to a specified topic and partition
-     * 
+     *
      * @param topic The topic the record will be appended to
      * @param partition The partition to which the record should be sent
      * @param timestamp The timestamp of the record, in milliseconds since epoch. If null, the producer will assign
-     *                  the timestamp using System.currentTimeMillis().
-     * @param key The key that will be included in the record
-     * @param value The record contents
-     * @param headers the headers that will be included in the record
+     * the timestamp using System.currentTimeMillis(). // 发送记录的时间毫秒戳
+     * @param key The key that will be included in the record // key 用来干啥？
+     * @param value The record contents // 真正的业务消息内容
+     * @param headers the headers that will be included in the record header
      */
     public ProducerRecord(String topic, Integer partition, Long timestamp, K key, V value, Iterable<Header> headers) {
         if (topic == null)
@@ -138,6 +138,7 @@ public class ProducerRecord<K, V> {
      * @param value The record contents
      */
     public ProducerRecord(String topic, V value) {
+        // 不指定 partition
         this(topic, null, null, null, value, null);
     }
 

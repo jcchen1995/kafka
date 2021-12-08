@@ -48,6 +48,8 @@ package org.apache.kafka.common;
 public interface ClusterResourceListener {
     /**
      * A callback method that a user can implement to get updates for {@link ClusterResource}.
+     * // 当集群出现变更，这个 Listener 就是用来接收这个变更的
+     *
      * @param clusterResource cluster metadata
      */
     void onUpdate(ClusterResource clusterResource);

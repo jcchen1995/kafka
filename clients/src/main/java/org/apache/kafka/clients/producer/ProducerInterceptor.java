@@ -23,46 +23,66 @@ import org.apache.kafka.common.Configurable;
  * they are published to the Kafka cluster.
  * <p>
  * This class will get producer config properties via <code>configure()</code> method, including clientId assigned
- * by KafkaProducer if not specified in the producer config. The interceptor implementation needs to be aware that it will be
+ * by KafkaProducer if not specified in the producer config. The interceptor implementation needs to be aware that it
+ * will be
  * sharing producer config namespace with other interceptors and serializers, and ensure that there are no conflicts.
  * <p>
  * Exceptions thrown by ProducerInterceptor methods will be caught, logged, but not propagated further. As a result, if
- * the user configures the interceptor with the wrong key and value type parameters, the producer will not throw an exception,
+ * the user configures the interceptor with the wrong key and value type parameters, the producer will not throw an
+ * exception,
  * just log the errors.
  * <p>
- * ProducerInterceptor callbacks may be called from multiple threads. Interceptor implementation must ensure thread-safety, if needed.
+ * ProducerInterceptor callbacks may be called from multiple threads. Interceptor implementation must ensure
+ * thread-safety, if needed.
  * <p>
- * Implement {@link org.apache.kafka.common.ClusterResourceListener} to receive cluster metadata once it's available. Please see the class documentation for ClusterResourceListener for more information.
+ * Implement {@link org.apache.kafka.common.ClusterResourceListener} to receive cluster metadata once it's available.
+ * Please see the class documentation for ClusterResourceListener for more information.
+ * 生产者发送前的拦截器
  */
 public interface ProducerInterceptor<K, V> extends Configurable {
     /**
      * This is called from {@link org.apache.kafka.clients.producer.KafkaProducer#send(ProducerRecord)} and
-     * {@link org.apache.kafka.clients.producer.KafkaProducer#send(ProducerRecord, Callback)} methods, before key and value
+     * {@link org.apache.kafka.clients.producer.KafkaProducer#send(ProducerRecord, Callback)} methods, before key and
+     * value
      * get serialized and partition is assigned (if partition is not specified in ProducerRecord).
      * <p>
-     * This method is allowed to modify the record, in which case, the new record will be returned. The implication of modifying
-     * key/value is that partition assignment (if not specified in ProducerRecord) will be done based on modified key/value,
-     * not key/value from the client. Consequently, key and value transformation done in onSend() needs to be consistent:
+     * This method is allowed to modify the record, in which case, the new record will be returned. The implication
+     * of modifying
+     * key/value is that partition assignment (if not specified in ProducerRecord) will be done based on modified
+     * key/value,
+     * not key/value from the client. Consequently, key and value transformation done in onSend() needs to be
+     * consistent:
      * same key and value should mutate to the same (modified) key and value. Otherwise, log compaction would not work
      * as expected.
      * <p>
-     * Similarly, it is up to interceptor implementation to ensure that correct topic/partition is returned in ProducerRecord.
+     * Similarly, it is up to interceptor implementation to ensure that correct topic/partition is returned in
+     * ProducerRecord.
      * Most often, it should be the same topic/partition from 'record'.
      * <p>
      * Any exception thrown by this method will be caught by the caller and logged, but not propagated further.
      * <p>
-     * Since the producer may run multiple interceptors, a particular interceptor's onSend() callback will be called in the order
-     * specified by {@link org.apache.kafka.clients.producer.ProducerConfig#INTERCEPTOR_CLASSES_CONFIG}. The first interceptor
-     * in the list gets the record passed from the client, the following interceptor will be passed the record returned by the
-     * previous interceptor, and so on. Since interceptors are allowed to modify records, interceptors may potentially get
-     * the record already modified by other interceptors. However, building a pipeline of mutable interceptors that depend on the output
-     * of the previous interceptor is discouraged, because of potential side-effects caused by interceptors potentially failing to
-     * modify the record and throwing an exception. If one of the interceptors in the list throws an exception from onSend(), the exception
-     * is caught, logged, and the next interceptor is called with the record returned by the last successful interceptor in the list,
+     * Since the producer may run multiple interceptors, a particular interceptor's onSend() callback will be called
+     * in the order
+     * specified by {@link org.apache.kafka.clients.producer.ProducerConfig#INTERCEPTOR_CLASSES_CONFIG}. The first
+     * interceptor
+     * in the list gets the record passed from the client, the following interceptor will be passed the record
+     * returned by the
+     * previous interceptor, and so on. Since interceptors are allowed to modify records, interceptors may
+     * potentially get
+     * the record already modified by other interceptors. However, building a pipeline of mutable interceptors that
+     * depend on the output
+     * of the previous interceptor is discouraged, because of potential side-effects caused by interceptors
+     * potentially failing to
+     * modify the record and throwing an exception. If one of the interceptors in the list throws an exception from
+     * onSend(), the exception
+     * is caught, logged, and the next interceptor is called with the record returned by the last successful
+     * interceptor in the list,
      * or otherwise the client.
      *
-     * @param record the record from client or the record returned by the previous interceptor in the chain of interceptors.
+     * @param record the record from client or the record returned by the previous interceptor in the chain of
+     * interceptors.
      * @return producer record to send to topic/partition
+     * 主要是调用这个方法
      */
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record);
 
@@ -84,7 +104,17 @@ public interface ProducerInterceptor<K, V> extends Configurable {
      *                 before partition gets assigned, then partition will be set to RecordMetadata.NO_PARTITION.
      *                 The metadata may be null if the client passed null record to
      *                 {@link org.apache.kafka.clients.producer.KafkaProducer#send(ProducerRecord)}.
-     * @param exception The exception thrown during processing of this record. Null if no error occurred.
+     * @param exception The exception thrown during proceorg.apache.kafka.clients.producer.internals
+     * .ProducerInterceptors#onSendError(org.apache.kafka.clients.producer.ProducerRecord, org.apache.kafka.common
+     * .TopicPartition, java.lang.Exception)ssing of this record. Null if no error occurred.
+     * // 优先于 send 方法中的 callback
+     * org.apache.kafka.clients.producer.internals.ProducerInterceptors#onAcknowledgement(org.apache.kafka.clients
+     * .producer.RecordMetadata, java.lang.Exception)
+     *
+     * org.apache.kafka.clients.producer.internals.ProducerInterceptors#onSendError(org.apache.kafka.clients.producer
+     * .ProducerRecord, org.apache.kafka.common.TopicPartition, java.lang.Exception)
+     *
+     * // 一般可以通过 exception 是否为空去判断本次消息发送是否错误
      */
     public void onAcknowledgement(RecordMetadata metadata, Exception exception);
 

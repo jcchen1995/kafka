@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration values for metrics
+ * Configuration values for metrics // metric 是度量的意思？
  */
 public class MetricConfig {
 

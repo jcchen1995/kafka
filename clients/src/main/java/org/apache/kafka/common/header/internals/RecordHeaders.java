@@ -47,6 +47,7 @@ public class RecordHeaders implements Headers {
     public RecordHeaders(Iterable<Header> headers) {
         //Use efficient copy constructor if possible, fallback to iteration otherwise
         if (headers == null) {
+            // 默认情况下 headers 是一个空的列表；TODO 所以看看这个 header 在哪会使用
             this.headers = new ArrayList<>();
         } else if (headers instanceof RecordHeaders) {
             this.headers = new ArrayList<>(((RecordHeaders) headers).headers);

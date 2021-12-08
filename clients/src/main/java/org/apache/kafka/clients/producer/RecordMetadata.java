@@ -23,6 +23,8 @@ import org.apache.kafka.common.requests.ProduceResponse;
 
 /**
  * The metadata for a record that has been acknowledged by the server
+ * kafka 的发送是异步的，send 方法返回的是泛型为 RecordMetadata 的 future
+ * 所以 RecordMetadata 返回的是被 broker 确认后的对象
  */
 public final class RecordMetadata {
 
@@ -38,8 +40,11 @@ public final class RecordMetadata {
     // user provided one. Otherwise, it will be the producer local time when the producer record was handed to the
     // producer.
     private final long timestamp;
+    // key 的大小
     private final int serializedKeySize;
+    // value 的大小
     private final int serializedValueSize;
+    // 主题分区
     private final TopicPartition topicPartition;
 
     private volatile Long checksum;

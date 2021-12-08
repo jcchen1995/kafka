@@ -16,10 +16,10 @@
  */
 package org.apache.kafka.clients.producer;
 
-import org.apache.kafka.common.Configurable;
-import org.apache.kafka.common.Cluster;
-
 import java.io.Closeable;
+
+import org.apache.kafka.common.Cluster;
+import org.apache.kafka.common.Configurable;
 
 /**
  * Partitioner Interface
@@ -41,6 +41,7 @@ public interface Partitioner extends Configurable, Closeable {
 
     /**
      * This is called when partitioner is closed.
+     * // 默认的分区器啥也没实现
      */
     public void close();
 

@@ -52,10 +52,14 @@ public class DefaultPartitioner implements Partitioner {
      * @param cluster The current cluster metadata
      */
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
+        // 查看这个 topic 的分区情况
         List<PartitionInfo> partitions = cluster.partitionsForTopic(topic);
+        // 有多少个分区；numPartitions 只是用来备用
         int numPartitions = partitions.size();
         if (keyBytes == null) {
             int nextValue = nextValue(topic);
+            // 获取这个集群中对应的主题可用的分片区列表；奇怪，那上面的 partitions 用来干啥呢
+            // 哦，只是用来去他的 size
             List<PartitionInfo> availablePartitions = cluster.availablePartitionsForTopic(topic);
             if (availablePartitions.size() > 0) {
                 int part = Utils.toPositive(nextValue) % availablePartitions.size();
@@ -66,6 +70,7 @@ public class DefaultPartitioner implements Partitioner {
             }
         } else {
             // hash the keyBytes to choose a partition
+            // 采用 MurmurHash2 算法
             return Utils.toPositive(Utils.murmur2(keyBytes)) % numPartitions;
         }
     }
@@ -73,6 +78,7 @@ public class DefaultPartitioner implements Partitioner {
     private int nextValue(String topic) {
         AtomicInteger counter = topicCounterMap.get(topic);
         if (null == counter) {
+            // 如果 counter 为 null，并不是从 1 开始，而是随机生成一个数字
             counter = new AtomicInteger(ThreadLocalRandom.current().nextInt());
             AtomicInteger currentCounter = topicCounterMap.putIfAbsent(topic, counter);
             if (currentCounter != null) {

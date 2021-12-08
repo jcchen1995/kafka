@@ -18,6 +18,7 @@ package org.apache.kafka.common;
 
 /**
  * This is used to describe per-partition state in the MetadataResponse.
+ * // 分区对象；一个分区
  */
 public class PartitionInfo {
 
@@ -58,6 +59,7 @@ public class PartitionInfo {
 
     /**
      * The node id of the node currently acting as a leader for this partition or null if there is no leader
+     * // 分区正常情况下不会有 leader 为 null 的情况，这样理解对吗
      */
     public Node leader() {
         return leader;

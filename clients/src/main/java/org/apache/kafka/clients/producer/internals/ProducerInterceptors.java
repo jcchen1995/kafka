@@ -17,6 +17,9 @@
 package org.apache.kafka.clients.producer.internals;
 
 
+import java.io.Closeable;
+import java.util.List;
+
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -25,15 +28,13 @@ import org.apache.kafka.common.record.RecordBatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.util.List;
-
 /**
  * A container that holds the list {@link org.apache.kafka.clients.producer.ProducerInterceptor}
  * and wraps calls to the chain of custom interceptors.
  */
 public class ProducerInterceptors<K, V> implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(ProducerInterceptors.class);
+    // TODO 可以看看有哪些拦截器
     private final List<ProducerInterceptor<K, V>> interceptors;
 
     public ProducerInterceptors(List<ProducerInterceptor<K, V>> interceptors) {
@@ -53,13 +54,16 @@ public class ProducerInterceptors<K, V> implements Closeable {
      *
      * @param record the record from client
      * @return producer record to send to topic/partition
+     * interceptors 的 onSend 调用 interceptor 的 onSend
      */
     public ProducerRecord<K, V> onSend(ProducerRecord<K, V> record) {
+        // 那么是否可以通过拦截器去包装一些东西呢
         ProducerRecord<K, V> interceptRecord = record;
         for (ProducerInterceptor<K, V> interceptor : this.interceptors) {
             try {
                 interceptRecord = interceptor.onSend(interceptRecord);
             } catch (Exception e) {
+                // 异常不传播出去
                 // do not propagate interceptor exception, log and continue calling other interceptors
                 // be careful not to throw exception from here
                 if (record != null)
@@ -81,6 +85,11 @@ public class ProducerInterceptors<K, V> implements Closeable {
      * @param metadata The metadata for the record that was sent (i.e. the partition and offset).
      *                 If an error occurred, metadata will only contain valid topic and maybe partition.
      * @param exception The exception thrown during processing of this record. Null if no error occurred.
+     * interceptors 的 onAcknowledgement 调用 interceptor 的 onAcknowledgement
+     *
+     * // 在 I/O 线程中进行
+     * 这个方法在正常情况下，是 sender 类调用的（可以一步一步追上去），所以这个方法要尽可能地写的简单
+     * // 如果太复杂，会影响消息的发送速度；TODO 可以看看快手对这个 interceptor 做了啥
      */
     public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
         for (ProducerInterceptor<K, V> interceptor : this.interceptors) {

@@ -16,6 +16,15 @@
  */
 package org.apache.kafka.clients.producer.internals;
 
+import static org.apache.kafka.common.record.RecordBatch.NO_TIMESTAMP;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.clients.ApiVersions;
 import org.apache.kafka.clients.ClientRequest;
 import org.apache.kafka.clients.ClientResponse;
@@ -57,15 +66,6 @@ import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.kafka.common.record.RecordBatch.NO_TIMESTAMP;
 
 /**
  * The background thread that handles the sending of produce requests to the Kafka cluster. This thread makes metadata
@@ -153,6 +153,7 @@ public class Sender implements Runnable {
 
     /**
      * The main run loop for the sender thread
+     * // 生产者发送消息的 run() 方法
      */
     public void run() {
         log.debug("Starting Kafka producer I/O thread.");
