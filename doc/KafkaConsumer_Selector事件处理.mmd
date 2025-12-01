@@ -1,0 +1,44 @@
+flowchart TD
+    Start([Selector.poll调用]) --> Clear[清空完成列表<br/>completedSends<br/>completedReceives]
+    Clear --> CheckBuffered{有缓冲数据?}
+    
+    CheckBuffered -->|是| SetTimeout0[设置timeout=0<br/>立即处理]
+    CheckBuffered -->|否| Select[调用nioSelector.select<br/>等待I/O事件]
+    
+    SetTimeout0 --> Select
+    
+    Select --> CheckReady{有事件就绪?}
+    CheckReady -->|否| Timeout[超时返回]
+    CheckReady -->|是| GetKeys[获取selectedKeys]
+    
+    GetKeys --> ProcessKeys[处理SelectionKey]
+    
+    ProcessKeys --> CheckType{事件类型}
+    
+    CheckType -->|OP_CONNECT| HandleConnect[处理连接事件<br/>channel.finishConnect]
+    CheckType -->|OP_WRITE| HandleWrite[处理写事件<br/>channel.write]
+    CheckType -->|OP_READ| HandleRead[处理读事件<br/>channel.read]
+    
+    HandleConnect --> UpdateConnected[添加到connected列表]
+    HandleWrite --> CheckWriteComplete{写入完成?}
+    CheckWriteComplete -->|是| AddCompletedSend[添加到completedSends]
+    CheckWriteComplete -->|否| KeepWriteInterest[保持写兴趣]
+    
+    HandleRead --> ParseResponse[解析响应数据]
+    ParseResponse --> CheckComplete{响应完整?}
+    CheckComplete -->|是| AddCompletedReceive[添加到completedReceives]
+    CheckComplete -->|否| BufferData[缓冲数据<br/>等待下次读取]
+    
+    UpdateConnected --> End
+    AddCompletedSend --> End
+    KeepWriteInterest --> End
+    AddCompletedReceive --> End
+    BufferData --> End
+    Timeout --> End
+    
+    End([返回处理结果])
+    
+    style Select fill:#ffcccc
+    style ProcessKeys fill:#ccffcc
+    style AddCompletedReceive fill:#ffffcc
+

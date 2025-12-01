@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph "应用层"
+        KC[KafkaConsumer<br/>用户API]
+        Fetcher[Fetcher<br/>消息拉取]
+        Coord[ConsumerCoordinator<br/>协调器]
+    end
+    
+    subgraph "网络客户端层"
+        CNC[ConsumerNetworkClient<br/>- 请求Future管理<br/>- 线程安全<br/>- 回调处理]
+        NC[NetworkClient<br/>- 连接管理<br/>- 请求/响应<br/>- 元数据更新]
+    end
+    
+    subgraph "NIO层 - 核心"
+        Sel[Selector<br/>java.nio.channels.Selector<br/>- 多路复用<br/>- 非阻塞I/O<br/>- 事件驱动]
+        KC1[KafkaChannel<br/>- SocketChannel包装<br/>- SSL/TLS支持<br/>- 发送/接收缓冲]
+    end
+    
+    subgraph "操作系统"
+        OS[TCP/IP Socket]
+    end
+    
+    subgraph "Broker集群"
+        B1[Broker 1]
+        B2[Broker 2]
+        BN[Broker N]
+    end
+    
+    KC --> Fetcher
+    KC --> Coord
+    Fetcher --> CNC
+    Coord --> CNC
+    CNC --> NC
+    NC --> Sel
+    Sel --> KC1
+    KC1 --> OS
+    OS --> B1
+    OS --> B2
+    OS --> BN
+    
+    style Sel fill:#ffcccc,stroke:#ff0000,stroke-width:3px
+    style KC1 fill:#ccffcc,stroke:#00ff00,stroke-width:2px
+    style CNC fill:#ffffcc,stroke:#ffff00,stroke-width:2px
+

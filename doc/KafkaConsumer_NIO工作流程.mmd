@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant User as 用户线程
+    participant KC as KafkaConsumer
+    participant Fetcher as Fetcher
+    participant CNC as ConsumerNetworkClient
+    participant NC as NetworkClient
+    participant Sel as Selector<br/>NIO层
+    participant OS as 操作系统
+    participant Broker as Kafka Broker
+    
+    Note over User,Broker: 1. 发送请求阶段（非阻塞）
+    User->>KC: poll(timeout)
+    KC->>Fetcher: sendFetches()
+    Fetcher->>CNC: send(node, FetchRequest)
+    CNC->>NC: doSend(node, request)
+    NC->>Sel: send(NetworkSend)
+    Sel->>KC1: 注册到KafkaChannel
+    KC1->>OS: SocketChannel.write()<br/>非阻塞写入
+    Note over OS: 数据写入Socket缓冲区<br/>立即返回，不阻塞
+    
+    Note over User,Broker: 2. 等待I/O事件（阻塞在select）
+    KC->>CNC: poll(timer)
+    CNC->>NC: poll(timeout)
+    NC->>Sel: poll(timeout)
+    Sel->>Sel: nioSelector.select(timeout)<br/>等待I/O事件就绪
+    Note over Sel: 阻塞等待，直到有事件或超时
+    
+    Note over User,Broker: 3. 处理I/O事件（非阻塞）
+    OS-->>Sel: Socket可读/可写事件就绪
+    Sel->>Sel: 处理SelectionKey<br/>- OP_CONNECT<br/>- OP_READ<br/>- OP_WRITE
+    Sel->>OS: SocketChannel.read()<br/>非阻塞读取
+    OS-->>Sel: 返回读取的数据
+    
+    Note over User,Broker: 4. 响应处理（回调）
+    Sel->>NC: completedReceives()
+    NC->>NC: 解析响应
+    NC->>CNC: 触发回调
+    CNC->>CNC: pendingCompletion.add()
+    CNC->>Fetcher: 回调处理响应
+    Fetcher->>Fetcher: completedFetches.add()<br/>添加到缓存队列
+    Fetcher-->>KC: 返回数据
+    KC-->>User: ConsumerRecords
+

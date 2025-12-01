@@ -1,0 +1,54 @@
+flowchart TB
+    subgraph "1. poll主流程"
+        A1[用户调用poll] --> A2[acquireAndEnsureOpen]
+        A2 --> A3{do-while循环}
+        A3 --> A4[updateAssignmentMetadataIfNeeded]
+        A4 --> A5[pollForFetches]
+        A5 --> A6{records.isEmpty?}
+        A6 -->|否| A7[发送下一轮fetch]
+        A7 --> A8[返回ConsumerRecords]
+        A6 -->|是| A9{timeout未过期?}
+        A9 -->|是| A3
+        A9 -->|否| A10[返回空]
+        A8 --> A11[release]
+        A10 --> A11
+    end
+    
+    subgraph "2. 心跳机制"
+        B1[coordinator.poll] --> B2[pollHeartbeat]
+        B2 --> B3{heartbeat.shouldHeartbeat?}
+        B3 -->|是| B4[notify心跳线程]
+        B3 -->|否| B5[heartbeat.poll更新]
+        B4 --> B6[心跳线程被唤醒]
+        B6 --> B7[sendHeartbeatRequest]
+        B7 --> B8[异步发送心跳]
+        B8 --> B9[响应监听器处理]
+    end
+    
+    subgraph "3. CompletedFetch异步拉取"
+        C1[sendFetches] --> C2[异步发送FetchRequest]
+        C2 --> C3[网络IO响应]
+        C3 --> C4[回调处理响应]
+        C4 --> C5[创建CompletedFetch]
+        C5 --> C6[completedFetches.add]
+    end
+    
+    subgraph "4. CompletedFetch缓存消费"
+        D1[fetchedRecords] --> D2[completedFetches.peek]
+        D2 --> D3{notInitialized?}
+        D3 -->|是| D4[initializeCompletedFetch]
+        D3 -->|否| D5[直接使用]
+        D4 --> D6[fetchRecords解析]
+        D5 --> D6
+        D6 --> D7[返回ConsumerRecord]
+    end
+    
+    A4 -.-> B1
+    A5 -.-> D1
+    A5 -.-> C1
+    C6 -.-> D2
+    
+    style B7 fill:#ffcccc
+    style C6 fill:#ccffcc
+    style D2 fill:#ccffcc
+
