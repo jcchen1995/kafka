@@ -530,6 +530,7 @@ public class NetworkClient implements KafkaClient {
                 request,
                 send,
                 now);
+        // 呐，是放入 inFlightRequests 中；放入Inflight后，谁来取呢？
         this.inFlightRequests.add(inFlightRequest);
         selector.send(new NetworkSend(clientRequest.destination(), send));
     }

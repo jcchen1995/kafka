@@ -575,10 +575,14 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
     private final ConsumerCoordinator coordinator;
     private final Deserializer<K> keyDeserializer;
     private final Deserializer<V> valueDeserializer;
+    // 消息拉取器，那这个 fetcher 和 ConsumerNetworkClient 有什么区别和联系是什么呢？
+    // fetcher 负责从多个分区拉取数据，并进行本地缓存(重要)，而 ConsumerNetworkClient 负责和 broker 进行网络通信
+    // fetcher包含了  ConsumerNetworkClient
     private final Fetcher<K, V> fetcher;
     private final ConsumerInterceptors<K, V> interceptors;
 
     private final Time time;
+    // 是消费者客户端的专属网络客户端，与所有broker通信，内置心跳发送线程
     private final ConsumerNetworkClient client;
     private final SubscriptionState subscriptions;
     private final ConsumerMetadata metadata;
@@ -786,6 +790,7 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
                         config.getInt(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG),
                         this.interceptors,
                         config.getBoolean(ConsumerConfig.THROW_ON_FETCH_STABLE_OFFSET_UNSUPPORTED));
+
             this.fetcher = new Fetcher<>(
                     logContext,
                     this.client,
@@ -944,10 +949,12 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
      *                               previously (without a subsequent call to {@link #unsubscribe()}), or if not
      *                               configured at-least one partition assignment strategy
      */
+    // 订阅的时候，可以增加rebalance的监听器
     @Override
     public void subscribe(Collection<String> topics, ConsumerRebalanceListener listener) {
         acquireAndEnsureOpen();
         try {
+            // 检查groupId
             maybeThrowInvalidGroupIdException();
             if (topics == null)
                 throw new IllegalArgumentException("Topic collection to subscribe to cannot be null");
@@ -961,9 +968,11 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
                 }
 
                 throwIfNoAssignorsConfigured();
+                // 清空没有订阅的topic的缓冲数据
                 fetcher.clearBufferedDataForUnassignedTopics(topics);
                 log.info("Subscribed to topic(s): {}", Utils.join(topics, ", "));
                 if (this.subscriptions.subscribe(new HashSet<>(topics), listener))
+                    // 看看有没有元数据要更新
                     metadata.requestUpdateForNewTopics();
             }
         } finally {
@@ -1213,6 +1222,7 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
     /**
      * @throws KafkaException if the rebalance callback throws exception
      */
+    // 核心工作：确保组协调、拉取消息
     private ConsumerRecords<K, V> poll(final Timer timer, final boolean includeMetadataInTimeout) {
         acquireAndEnsureOpen();
         try {
@@ -1272,7 +1282,7 @@ public class KafkaConsumer<K, V> implements Consumer<K, V> {
         long pollTimeout = coordinator == null ? timer.remainingMs() :
                 Math.min(coordinator.timeToNextPoll(timer.currentTimeMs()), timer.remainingMs());
 
-        // if data is available already, return it immediately
+        // if data is available already, return it immediately // 注意这个描述，极有可能是从缓存取
         final Map<TopicPartition, List<ConsumerRecord<K, V>>> records = fetcher.fetchedRecords();
         if (!records.isEmpty()) {
             return records;

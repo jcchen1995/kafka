@@ -768,6 +768,7 @@ public class KafkaProducer<K, V> implements Producer<K, V> {
      * Asynchronously send a record to a topic. Equivalent to <code>send(record, null)</code>.
      * See {@link #send(ProducerRecord, Callback)} for details.
      */
+    // 好多设计思想都是相同的，比如我学习到的，批处理（逗留时间和batchSize先到先发送）、背压，如果队列满了，会把压力反馈到主调方
     @Override
     public Future<RecordMetadata> send(ProducerRecord<K, V> record) {
         return send(record, null);
@@ -881,6 +882,7 @@ public class KafkaProducer<K, V> implements Producer<K, V> {
     @Override
     public Future<RecordMetadata> send(ProducerRecord<K, V> record, Callback callback) {
         // intercept the record, which can be potentially modified; this method does not throw exceptions
+        // 生产者拦截器，为开发者提供发送前确认、审核、增强用
         ProducerRecord<K, V> interceptedRecord = this.interceptors.onSend(record);
         return doSend(interceptedRecord, callback);
     }

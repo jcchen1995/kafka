@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant S as Sender Thread (Loop)
+    participant RA as RecordAccumulator
+    participant BQ as Batches Queue
+    participant Sel as Selector (NIO)
+    participant Net as Network
+
+    loop Sender Run Loop
+        S ->> RA: get ready batches
+        Note over S, RA: 检查哪些节点的分区有可发送的Batch
+        RA -->> S: List<ReadyBatch>
+
+        S ->> BQ: group by target node
+        Note over S, BQ: 将Batch按目标Broker节点分组，构建ClientRequest
+
+        S ->> Sel: register writes for requests
+        Note over S, Sel: 将请求注册到Selector，关注可写事件
+
+        loop For each ready SelectionKey
+            Sel ->> S: channel is writable
+            S ->> Net: send ClientRequest
+            Note over S, Net: 通过Channel将数据发送至网络
+            Net -->> S: send result
+        end
+
+        S ->> Sel: check for completed sends
+        Note over S, Sel: 检查是否有发送完成的请求，处理响应
+    end

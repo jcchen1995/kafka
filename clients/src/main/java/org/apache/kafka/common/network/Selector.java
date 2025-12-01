@@ -523,6 +523,7 @@ public class Selector implements Selectable, AutoCloseable {
             try {
                 /* complete any connections that have finished their handshake (either normally or immediately) */
                 if (isImmediatelyConnected || key.isConnectable()) {
+                    // 处理连接事件
                     if (channel.finishConnect()) {
                         this.connected.add(nodeId);
                         this.sensors.connectionCreated.record();
@@ -573,6 +574,7 @@ public class Selector implements Selectable, AutoCloseable {
                 //previous completed receive then read from it
                 if (channel.ready() && (key.isReadable() || channel.hasBytesBuffered()) && !hasCompletedReceive(channel)
                         && !explicitlyMutedChannels.contains(channel)) {
+                    // 处理读事件
                     attemptRead(channel);
                 }
 
@@ -587,7 +589,7 @@ public class Selector implements Selectable, AutoCloseable {
                 }
 
                 /* if channel is ready write to any sockets that have space in their buffer and for which we have data */
-
+                // 到这里就是可写了
                 long nowNanos = channelStartTimeNanos != 0 ? channelStartTimeNanos : currentTimeNanos;
                 try {
                     attemptWrite(key, channel, nowNanos);
@@ -639,6 +641,7 @@ public class Selector implements Selectable, AutoCloseable {
     }
 
     // package-private for testing
+    // 真正发生写操作
     void write(KafkaChannel channel) throws IOException {
         String nodeId = channel.id();
         long bytesSent = channel.write();

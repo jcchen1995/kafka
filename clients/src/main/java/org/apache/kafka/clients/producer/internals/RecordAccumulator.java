@@ -63,6 +63,7 @@ import org.slf4j.Logger;
  * The accumulator uses a bounded amount of memory and append calls will block when that memory is exhausted, unless
  * this behavior is explicitly disabled.
  */
+// 消息累加器，我曾经使用这个思路，提过指标系统重指标的一致性保障思路
 public final class RecordAccumulator {
 
     private final Logger log;
@@ -74,9 +75,14 @@ public final class RecordAccumulator {
     private final int lingerMs;
     private final long retryBackoffMs;
     private final int deliveryTimeoutMs;
+    // 可使用的内存，使用内存复用技术，避免频繁GC
+    // 每个buffer大小一样。FIXME Netty这个中间件也用了内存复用策略
     private final BufferPool free;
     private final Time time;
     private final ApiVersions apiVersions;
+    // 为每个partition分配一个双端队列，特别注意这个双端队列是用来干啥的
+    // 高级缓冲区，如何缓冲？
+    // 注意里面的元素不是消息，而是消息batch
     private final ConcurrentMap<TopicPartition, Deque<ProducerBatch>> batches;
     private final IncompleteBatches incomplete;
     // The following variables are only accessed by the sender thread, so we don't need to protect them.

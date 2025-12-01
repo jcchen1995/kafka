@@ -135,6 +135,7 @@ public class ConsumerNetworkClient implements Closeable {
         return completionHandler.future;
     }
 
+    // 最低负载的broker node
     public Node leastLoadedNode() {
         lock.lock();
         try {

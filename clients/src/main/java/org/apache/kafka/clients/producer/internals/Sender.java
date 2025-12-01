@@ -75,6 +75,7 @@ public class Sender implements Runnable {
     /* the state of each nodes connection */
     private final KafkaClient client;
 
+    // sender线程：发送者线程，从 accumulator 里面取数据发送
     /* the record accumulator that batches records */
     private final RecordAccumulator accumulator;
 
@@ -324,12 +325,15 @@ public class Sender implements Runnable {
 
         long currentTimeMs = time.milliseconds();
         long pollTimeout = sendProducerData(currentTimeMs);
+        // sender对外提供了sendRequest方法，这个方法是把请求放入inFlight
+        // sender自身又有个循环，不断的poll，去处理inFlight里面的请求
         client.poll(pollTimeout, currentTimeMs);
     }
 
     private long sendProducerData(long now) {
         Cluster cluster = metadata.fetch();
         // get the list of partitions with data ready to send
+        // 查出有哪些broker节点id是准备好的。为什么是brokerId呢，因为每个topic都会对应一个broker作为leader节点
         RecordAccumulator.ReadyCheckResult result = this.accumulator.ready(cluster, now);
 
         // if there are any partitions whose leaders are not known yet, force metadata update
@@ -357,6 +361,7 @@ public class Sender implements Runnable {
         }
 
         // create produce requests
+        // 拿到可以发送出去的消息batch
         Map<Integer, List<ProducerBatch>> batches = this.accumulator.drain(cluster, result.readyNodes, this.maxRequestSize, now);
         addToInflightBatches(batches);
         if (guaranteeMessageOrder) {
@@ -787,6 +792,7 @@ public class Sender implements Runnable {
         String nodeId = Integer.toString(destination);
         ClientRequest clientRequest = client.newClientRequest(nodeId, requestBuilder, now, acks != 0,
                 requestTimeoutMs, callback);
+        // 实际上是存入inflightRequests队列中，等待网络层处理
         client.send(clientRequest, now);
         log.trace("Sent produce request to {}: {}", nodeId, requestBuilder);
     }
